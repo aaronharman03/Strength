@@ -6,6 +6,35 @@
   <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#4caf50" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<script type="module">
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, collection, addDoc, setDoc, doc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Make these available globally (optional)
+  window.firebase = { auth, db };
+</script>
+<div id="auth-container">
+  <h2>Login or Sign Up</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="signUp()">Sign Up</button>
+  <button onclick="signIn()">Sign In</button>
+  <button onclick="signOutUser()">Sign Out</button>
+  <p id="user-status"></p>
+</div>
 
   <style>
     body {
@@ -206,6 +235,39 @@
   <div id="exercises"></div>
 
   <script>
+    const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const userStatus = document.getElementById("user-status");
+
+function signUp() {
+  createUserWithEmailAndPassword(firebase.auth, emailInput.value, passwordInput.value)
+    .then(userCredential => {
+      userStatus.textContent = `Signed up as ${userCredential.user.email}`;
+    }).catch(error => alert(error.message));
+}
+
+function signIn() {
+  signInWithEmailAndPassword(firebase.auth, emailInput.value, passwordInput.value)
+    .then(userCredential => {
+      userStatus.textContent = `Signed in as ${userCredential.user.email}`;
+    }).catch(error => alert(error.message));
+}
+
+function signOutUser() {
+  signOut(firebase.auth).then(() => {
+    userStatus.textContent = "Signed out";
+  });
+}
+
+onAuthStateChanged(firebase.auth, user => {
+  if (user) {
+    userStatus.textContent = `Logged in as ${user.email}`;
+    loadUserExercises(user.uid);
+  } else {
+    userStatus.textContent = "Not logged in";
+  }
+});
+
     const form = document.getElementById("exercise-form");
     const exercisesDiv = document.getElementById("exercises");
     const submitBtn = document.getElementById("submit-btn");

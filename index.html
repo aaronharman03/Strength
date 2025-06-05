@@ -7,6 +7,26 @@
 <meta name="theme-color" content="#4caf50" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <script type="module">
+  async function loadUserExercises(uid) {
+  const userExercisesRef = collection(firebase.db, "users", uid, "exercises");
+  try {
+    const snapshot = await getDocs(userExercisesRef);
+    exercisesDiv.innerHTML = "";
+    progressArray = [];
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const exerciseEl = createExerciseElement(data, data.progressPercent);
+      exercisesDiv.appendChild(exerciseEl);
+      progressArray.push(data.progressPercent);
+    });
+
+    updateOverallProgress();
+  } catch (error) {
+    console.error("Error loading exercises:", error);
+  }
+}
+
   // Import Firebase SDKs
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";

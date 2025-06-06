@@ -246,17 +246,13 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 // Listen for auth state changes
 firebase.auth().onAuthStateChanged(user => {
   if (user) {
-    console.log("User is signed in:", user.email);
-    // Show main app UI, hide login form
-    showAppUI();
-    // Load user-specific data
-    loadUserData(user.uid);
+    currentUser = user;
+    loadExercises();
   } else {
-    console.log("No user signed in");
-    // Show login form, hide main app UI
-    showLoginUI();
+    window.location.href = 'login.html';
   }
 });
+
 
 
   logoutBtn.addEventListener("click", () => {

@@ -367,6 +367,11 @@ let progressArray = []; // to store each exercise progress
         const exercise = createExerciseElement(data, progressPercent);
         exercisesDiv.appendChild(exercise);
       }
+const user = firebase.auth.currentUser;
+if (user) {
+  const userExercisesRef = collection(firebase.db, "users", user.uid, "exercises");
+  await addDoc(userExercisesRef, { ...data, progressPercent });
+}
 
       form.reset();
     });

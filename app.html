@@ -206,6 +206,32 @@
   <div id="exercises"></div>
 
   <script>
+    <script>
+  // Initialize Firebase again in app.html with the same config:
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY_HERE",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  // Redirect to login if not logged in
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      window.location.href = 'index.html';
+    } else {
+      // User is logged in, you can load user data here
+      console.log('Logged in user:', user.email);
+      // Optionally load Firestore user data here
+    }
+  });
+</script>
+
     const form = document.getElementById("exercise-form");
     const exercisesDiv = document.getElementById("exercises");
     const submitBtn = document.getElementById("submit-btn");

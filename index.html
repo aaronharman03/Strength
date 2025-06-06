@@ -128,6 +128,7 @@
       try {
         if (isLogin) {
           // Login
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
           await auth.signInWithEmailAndPassword(email, password);
         } else {
           // Sign up

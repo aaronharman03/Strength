@@ -250,9 +250,17 @@
     }
   });
 
-  logoutBtn.addEventListener("click", () => {
-    auth.signOut();
-  });
+ logoutBtn.addEventListener("click", () => {
+  auth.signOut()
+    .then(() => {
+      // Redirect to login page explicitly after logout
+      window.location.href = "index.html";
+    })
+    .catch((error) => {
+      console.error("Logout failed:", error);
+    });
+});
+
 
   // Load exercises from Firestore
   function loadExercises() {

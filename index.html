@@ -240,15 +240,17 @@
   
 
 
-  // Redirect to login if not logged in
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      currentUser = user;
-      loadExercises();
-    } else {
-      window.location.href = "index.html";
-    }
-  });
+ auth.onAuthStateChanged(user => {
+  console.log("onAuthStateChanged called, user:", user);
+  if (user) {
+    currentUser = user;
+    loadExercises();
+  } else {
+    console.log("No user, redirecting to login");
+    window.location.href = "index.html";
+  }
+});
+
 
  logoutBtn.addEventListener("click", () => {
   console.log("Logout button clicked");

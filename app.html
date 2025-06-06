@@ -159,8 +159,19 @@
 </head>
 <body>
     <h2>Overall Progress</h2>
-<div class="progress-bar" id="overall-progress-bar" style="max-width: 600px; margin: 0 auto 30px;">
+<div class="progress-bar" id="overall-progress-bar" style="max-width: 600px; margin: 0 auto 30px; position: relative;">
   <div class="progress-fill" style="width: 0%; background: #2196F3;"></div>
+  <span id="overall-progress-text" style="
+    position: absolute; 
+    top: 0; 
+    left: 50%; 
+    transform: translateX(-50%);
+    height: 20px; 
+    line-height: 20px; 
+    font-weight: 600; 
+    color: #fff;
+    user-select: none;
+  ">0%</span>
 </div>
 
   <h2>Add Exercise</h2>

@@ -435,7 +435,14 @@ if (user) {
 
       // Delete button
       exercise.querySelector(".delete-btn").addEventListener("click", () => {
-        exercise.remove();
+        const user = firebase.auth.currentUser;
+if (user) {
+  const exerciseId = exercise.dataset.docId;
+  await deleteDoc(doc(firebase.db, "users", user.uid, "exercises", exerciseId));
+}
+exercise.remove();
+updateOverallProgress();
+
       });
 
       return exercise;

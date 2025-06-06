@@ -261,12 +261,12 @@ firebase.auth().onAuthStateChanged(user => {
     currentUser = user;
     loadExercises();
   } else {
- if (!redirecting) {
-  redirecting = true;
-  setTimeout(() => {
-    window.location.href = 'index.html';
-  }, 100);  // 100 ms delay to avoid rapid firing
-}
+    if (window.location.pathname !== '/index.html') {
+      window.location.href = 'index.html';
+    }
+  }
+});
+
 
 
   logoutBtn.addEventListener("click", () => {

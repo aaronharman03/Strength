@@ -478,6 +478,15 @@ logoutBtn.addEventListener("click", () => {
       menu.style.display = "none";
     });
   }
+   const toggleFormBtn = document.getElementById("toggle-form-btn");
+const exerciseForm = document.getElementById("exercise-form");
+
+toggleFormBtn.addEventListener("click", () => {
+  const isHidden = exerciseForm.style.display === "none";
+  exerciseForm.style.display = isHidden ? "block" : "none";
+  toggleFormBtn.textContent = isHidden ? "− Hide Form" : "＋ Add Exercise";
+});
+
 </script>
 
 </body>

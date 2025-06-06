@@ -264,11 +264,12 @@ firebase.auth().onAuthStateChanged(user => {
   }
 });
 
-
-
-  logoutBtn.addEventListener("click", () => {
-    auth.signOut();
+logoutBtn.addEventListener("click", () => {
+  auth.signOut().then(() => {
+    window.location.href = 'index.html';
   });
+});
+
 
   // Load exercises from Firestore
   function loadExercises() {

@@ -174,52 +174,48 @@
   ">0%</span>
 </div>
 
- <!-- Toggle Button -->
-<button id="toggle-form-btn" style="margin-bottom: 10px;">＋ Add Exercise</button>
-
-<!-- Hidden Form -->
-<form id="exercise-form" style="display: none; margin-bottom: 20px;">
-  <div class="form-row">
-    <label for="name">Exercise Name</label>
-    <input placeholder="Exercise name" id="name" required />
-  </div>
-  <div class="form-row">
-    <label for="startWeight">Start Weight (kg)</label>
-    <input type="number" step="0.1" id="startWeight" required />
-  </div>
-  <div class="form-row">
-    <label for="goalWeight">Goal Weight (kg)</label>
-    <input type="number" step="0.1" id="goalWeight" required />
-  </div>
-  <div class="form-row">
-    <label for="currentWeight">Current Weight (kg)</label>
-    <input type="number" step="0.1" id="currentWeight" required />
-  </div>
-
-  <div class="form-row">
-    <label>Reps per Set</label>
-    <div class="reps-group">
-      <div><input placeholder="Set 1" type="number" id="reps1" required /></div>
-      <div><input placeholder="Set 2" type="number" id="reps2" required /></div>
-      <div><input placeholder="Set 3" type="number" id="reps3" required /></div>
+  <h2>Add Exercise</h2>
+  <form id="exercise-form">
+    <div class="form-row">
+      <label for="name">Exercise Name</label>
+      <input placeholder="Exercise name" id="name" required />
     </div>
-  </div>
+    <div class="form-row">
+      <label for="startWeight">Start Weight (kg)</label>
+      <input type="number" step="0.1" id="startWeight" required />
+    </div>
+    <div class="form-row">
+      <label for="goalWeight">Goal Weight (kg)</label>
+      <input type="number" step="0.1" id="goalWeight" required />
+    </div>
+    <div class="form-row">
+      <label for="currentWeight">Current Weight (kg)</label>
+      <input type="number" step="0.1" id="currentWeight" required />
+    </div>
+    
+    <div class="form-row">
+      <label>Reps per Set</label>
+      <div class="reps-group">
+        <div><input placeholder="Set 1" type="number" id="reps1" required /></div>
+        <div><input placeholder="Set 2" type="number" id="reps2" required /></div>
+        <div><input placeholder="Set 3" type="number" id="reps3" required /></div>
+      </div>
+    </div>
 
-  <div class="form-row">
-    <label for="repRangeMin">Rep Range Min</label>
-    <input type="number" id="repRangeMin" value="6" />
-  </div>
-  <div class="form-row">
-    <label for="repRangeMax">Rep Range Max</label>
-    <input type="number" id="repRangeMax" value="10" />
-  </div>
-  <div class="form-row">
-    <label for="increment">Weight Increment (kg)</label>
-    <input type="number" step="0.1" id="increment" value="2.5" />
-  </div>
-  <button type="submit" id="submit-btn">Add Exercise</button>
-</form>
-
+    <div class="form-row">
+      <label for="repRangeMin">Rep Range Min</label>
+      <input type="number" id="repRangeMin" value="6" />
+    </div>
+    <div class="form-row">
+      <label for="repRangeMax">Rep Range Max</label>
+      <input type="number" id="repRangeMax" value="10" />
+    </div>
+    <div class="form-row">
+      <label for="increment">Weight Increment (kg)</label>
+      <input type="number" step="0.1" id="increment" value="2.5" />
+    </div>
+    <button type="submit" id="submit-btn">Add Exercise</button>
+  </form>
 
   <h2>Progress</h2>
   <div id="exercises"></div>
@@ -478,15 +474,6 @@ logoutBtn.addEventListener("click", () => {
       menu.style.display = "none";
     });
   }
-   const toggleFormBtn = document.getElementById("toggle-form-btn");
-const exerciseForm = document.getElementById("exercise-form");
-
-toggleFormBtn.addEventListener("click", () => {
-  const isHidden = exerciseForm.style.display === "none";
-  exerciseForm.style.display = isHidden ? "block" : "none";
-  toggleFormBtn.textContent = isHidden ? "− Hide Form" : "＋ Add Exercise";
-});
-
 </script>
 
 </body>

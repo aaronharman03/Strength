@@ -125,31 +125,27 @@
       const email = emailInput.value.trim();
       const password = passwordInput.value.trim();
 
-    try {
-  // Set persistence to LOCAL so session stays after browser close
-  await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      try {
+        if (isLogin) {
+          // Login
+          await auth.signInWithEmailAndPassword(email, password);
+        } else {
+          // Sign up
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
 
-  if (isLogin) {
-    // Login
-    await auth.signInWithEmailAndPassword(email, password);
-  } else {
-    // Sign up
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          // Optional: Initialize user data in Firestore after signup
+          await db.collection('users').doc(userCredential.user.uid).set({
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            email: email
+          });
+        }
 
-    // Optional: Initialize user data in Firestore after signup
-    await db.collection('users').doc(userCredential.user.uid).set({
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      email: email
+        // Redirect to app.html on success
+        window.location.href = 'app.html';
+      } catch (error) {
+        errorMsg.textContent = error.message;
+      }
     });
-  }
-
-  // Redirect to app.html on success
-  window.location.href = 'app.html';
-} catch (error) {
-  errorMsg.textContent = error.message;
-}
-
   </script>
 </body>
 </html>
-

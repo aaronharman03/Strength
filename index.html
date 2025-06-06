@@ -2,150 +2,453 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Login / Signup - Strength Progress Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Strength Progress Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#4caf50" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 400px;
-      margin: 60px auto;
+      max-width: 600px;
+      margin: 40px auto;
       background: #f9f9f9;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      color: #333;
     }
     h2 {
-      text-align: center;
-      color: #4caf50;
+      border-bottom: 2px solid #4caf50;
+      padding-bottom: 6px;
       margin-bottom: 20px;
     }
+    h2 {
+  text-align: center;
+}
+
     form {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      position: relative;
     }
-    input {
-      padding: 10px;
-      font-size: 1rem;
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+    .form-row label {
+      flex: 0 0 130px;
+      font-weight: 600;
+    }
+    .form-row input {
+      flex: 1;
+      padding: 8px 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      outline-offset: 2px;
-      outline-color: transparent;
-      transition: outline-color 0.3s;
+      font-size: 1rem;
+      transition: border-color 0.2s;
     }
-    input:focus {
-      outline-color: #4caf50;
+    .form-row input:focus {
+      border-color: #4caf50;
+      outline: none;
     }
+    .reps-group {
+  display: flex;
+  gap: 25px;
+  justify-content: space-between;
+}
+
+.reps-group div {
+  flex: 0 0 40px; /* fixed width of 40px */
+  max-width: 40px;
+}
+
+.reps-group input {
+  width: 150%;      /* Make input fill the div */
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  transition: border-color 0.2s;
+}
+
     button {
       background: #4caf50;
       color: white;
       border: none;
-      padding: 12px;
+      padding: 12px 25px;
       font-size: 1rem;
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.3s;
+      margin-top: 10px;
     }
     button:hover {
       background: #3a8e3a;
     }
-    .switch-mode {
-      text-align: center;
-      margin-top: 15px;
+    .exercise {
+      background: #fff;
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 1px 5px rgb(0 0 0 / 0.05);
+      position: relative;
+    }
+    .progress-bar {
+      height: 20px;
+      background: #eee;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #4caf50;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    /* Burger menu styles */
+    .burger-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
       cursor: pointer;
-      color: #4caf50;
       user-select: none;
     }
-    .error {
-      color: red;
-      font-weight: 600;
-      margin-top: -10px;
-      margin-bottom: 10px;
-      text-align: center;
+    .menu {
+      position: absolute;
+      top: 40px;
+      right: 15px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.15);
+      display: none;
+      z-index: 100;
+      width: 100px;
+    }
+    .menu button {
+      background: none;
+      border: none;
+      width: 100%;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #333;
+      border-bottom: 1px solid #eee;
+    }
+    .menu button:last-child {
+      border-bottom: none;
+    }
+    .menu button:hover {
+      background: #4caf50;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <h2 id="form-title">Login</h2>
-  <form id="auth-form">
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Password" required minlength="6" />
-    <button type="submit" id="submit-btn">Login</button>
+    <h2>Overall Progress</h2>
+<div class="progress-bar" id="overall-progress-bar" style="max-width: 600px; margin: 0 auto 30px;">
+  <div class="progress-fill" style="width: 0%; background: #2196F3;"></div>
+</div>
+
+  <h2>Add Exercise</h2>
+  <form id="exercise-form">
+    <div class="form-row">
+      <label for="name">Exercise Name</label>
+      <input placeholder="Exercise name" id="name" required />
+    </div>
+    <div class="form-row">
+      <label for="startWeight">Start Weight (kg)</label>
+      <input type="number" step="0.1" id="startWeight" required />
+    </div>
+    <div class="form-row">
+      <label for="goalWeight">Goal Weight (kg)</label>
+      <input type="number" step="0.1" id="goalWeight" required />
+    </div>
+    <div class="form-row">
+      <label for="currentWeight">Current Weight (kg)</label>
+      <input type="number" step="0.1" id="currentWeight" required />
+    </div>
+    
+    <div class="form-row">
+      <label>Reps per Set</label>
+      <div class="reps-group">
+        <div><input placeholder="Set 1" type="number" id="reps1" required /></div>
+        <div><input placeholder="Set 2" type="number" id="reps2" required /></div>
+        <div><input placeholder="Set 3" type="number" id="reps3" required /></div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label for="repRangeMin">Rep Range Min</label>
+      <input type="number" id="repRangeMin" value="6" />
+    </div>
+    <div class="form-row">
+      <label for="repRangeMax">Rep Range Max</label>
+      <input type="number" id="repRangeMax" value="10" />
+    </div>
+    <div class="form-row">
+      <label for="increment">Weight Increment (kg)</label>
+      <input type="number" step="0.1" id="increment" value="2.5" />
+    </div>
+    <button type="submit" id="submit-btn">Add Exercise</button>
   </form>
-  <div class="error" id="error-msg"></div>
-  <div class="switch-mode" id="switch-mode">Don't have an account? Sign up</div>
 
-  <!-- Firebase App (the core Firebase SDK) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <!-- Firebase Auth -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <!-- Firebase Firestore -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <h2>Progress</h2>
+  <div id="exercises"></div>
 
-  <script>
-    // TODO: Replace these with your Firebase config values from Firebase Console
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-FVlSv7HQgY-yq5JLxqTbPeCFK2bBbyU",
+  <button id="logout-btn" style="position: fixed; top: 10px; right: 10px; background: #f44336; color: white; border:none; padding: 8px 12px; border-radius: 6px; cursor:pointer;">Logout</button>
+
+ <script>
+  // Your Firebase config - replace with your actual config from Firebase console
+  const firebaseConfig = {
+    apiKey: "AIzaSyC-FVlSv7HQgY-yq5JLxqTbPeCFK2bBbyU",
   authDomain: "strength-e210d.firebaseapp.com",
   projectId: "strength-e210d",
   storageBucket: "strength-e210d.firebasestorage.app",
   messagingSenderId: "808264231495",
   appId: "1:808264231495:web:ed10488fa6537a31a5df62",
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const form = document.getElementById("exercise-form");
+  const exercisesDiv = document.getElementById("exercises");
+  const submitBtn = document.getElementById("submit-btn");
+  const overallBarFill = document.querySelector('#overall-progress-bar .progress-fill');
+  const logoutBtn = document.getElementById("logout-btn");
+
+  let editingExercise = null;
+  let currentUser = null;
+  let unsubscribeExercises = null; // to detach listener
+
+  // Redirect to login if not logged in
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      currentUser = user;
+      loadExercises();
+    } else {
+      window.location.href = "index.html";
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    auth.signOut();
+  });
+
+  // Load exercises from Firestore
+  function loadExercises() {
+    if (unsubscribeExercises) unsubscribeExercises(); // detach previous listener
+
+    unsubscribeExercises = db.collection("users")
+      .doc(currentUser.uid)
+      .collection("exercises")
+      .onSnapshot(snapshot => {
+        exercisesDiv.innerHTML = "";
+        let progressArray = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data.id = doc.id;
+          const progressPercent = calculateProgress(data);
+          progressArray.push(progressPercent);
+
+          const exerciseElem = createExerciseElement(data, progressPercent);
+          exercisesDiv.appendChild(exerciseElem);
+        });
+
+        updateOverallProgress(progressArray);
+      });
+  }
+
+  // Calculate progress function same as before
+  function calculateProgress(data) {
+    const repRangeMin = data.repRangeMin;
+    const repRangeMax = data.repRangeMax;
+    const increment = data.increment;
+    const reps = data.reps;
+
+    const repIncrements = reps.map(r => r - repRangeMin);
+    const totalRepsIncrements = repIncrements.reduce((a, b) => a + b, 0);
+    const maxRepsIncrementsPerWeight = (repRangeMax - repRangeMin) * 3;
+    const weightIncrements = Math.floor((data.currentWeight - data.startWeight) / increment);
+    const maxWeightIncrements = Math.floor((data.goalWeight - data.startWeight) / increment);
+    const currentLevel = weightIncrements * (maxRepsIncrementsPerWeight + 1) + totalRepsIncrements + 1;
+    const maxLevel = maxWeightIncrements * (maxRepsIncrementsPerWeight + 1) + maxRepsIncrementsPerWeight + 1;
+
+    let progressPercent = (currentLevel / maxLevel) * 100;
+    progressPercent = Math.min(100, Math.max(0, progressPercent));
+
+    return progressPercent;
+  }
+
+  // Update overall progress bar
+  function updateOverallProgress(progressArray) {
+    if (progressArray.length === 0) {
+      overallBarFill.style.width = "0%";
+      return;
+    }
+    const avgProgress = progressArray.reduce((a, b) => a + b, 0) / progressArray.length;
+    overallBarFill.style.width = avgProgress + "%";
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    if (!currentUser) return;
+
+    const data = {
+      name: form.name.value.trim(),
+      startWeight: parseFloat(form.startWeight.value),
+      goalWeight: parseFloat(form.goalWeight.value),
+      currentWeight: parseFloat(form.currentWeight.value),
+      reps: [
+        parseInt(form.reps1.value),
+        parseInt(form.reps2.value),
+        parseInt(form.reps3.value),
+      ],
+      repRangeMin: parseInt(form.repRangeMin.value),
+      repRangeMax: parseInt(form.repRangeMax.value),
+      increment: parseFloat(form.increment.value),
     };
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    // Clamp reps
+    data.reps = data.reps.map((r) =>
+      Math.min(Math.max(r, data.repRangeMin), data.repRangeMax)
+    );
 
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    if (editingExercise) {
+      // Update Firestore doc
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("exercises")
+        .doc(editingExercise.dataset.id)
+        .set(data)
+        .then(() => {
+          editingExercise = null;
+          submitBtn.textContent = "Add Exercise";
+          form.reset();
+        })
+        .catch(console.error);
+    } else {
+      // Add new doc to Firestore
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("exercises")
+        .add(data)
+        .then(() => {
+          form.reset();
+        })
+        .catch(console.error);
+    }
+  });
 
-    const formTitle = document.getElementById('form-title');
-    const authForm = document.getElementById('auth-form');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const submitBtn = document.getElementById('submit-btn');
-    const switchMode = document.getElementById('switch-mode');
-    const errorMsg = document.getElementById('error-msg');
+  // Creates exercise DOM element with burger menu
+  function createExerciseElement(data, progressPercent) {
+    const exercise = document.createElement("div");
+    exercise.className = "exercise";
 
-    let isLogin = true; // track mode
+    // Save data in dataset for easy editing later
+    exercise.dataset.id = data.id;
+    exercise.dataset.name = data.name;
+    exercise.dataset.startWeight = data.startWeight;
+    exercise.dataset.goalWeight = data.goalWeight;
+    exercise.dataset.currentWeight = data.currentWeight;
+    exercise.dataset.reps = data.reps.join(',');
+    exercise.dataset.repRangeMin = data.repRangeMin;
+    exercise.dataset.repRangeMax = data.repRangeMax;
+    exercise.dataset.increment = data.increment;
 
-    // Toggle between login and signup
-    switchMode.addEventListener('click', () => {
-      isLogin = !isLogin;
-      formTitle.textContent = isLogin ? 'Login' : 'Sign Up';
-      submitBtn.textContent = isLogin ? 'Login' : 'Sign Up';
-      switchMode.textContent = isLogin ? "Don't have an account? Sign up" : "Already have an account? Login";
-      errorMsg.textContent = '';
+    exercise.innerHTML = `
+      <strong>${data.name}</strong><br />
+      ${data.currentWeight.toFixed(1)} kg × [${data.reps.join(", ")} reps]<br />
+      Progress: ${progressPercent.toFixed(1)}%
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${progressPercent}%"></div>
+      </div>
+      <button class="burger-btn" aria-label="Options menu">&#x22EE;</button>
+      <div class="menu">
+        <button class="edit-btn">Edit</button>
+        <button class="delete-btn">Delete</button>
+      </div>
+    `;
+
+    // Setup burger menu toggle
+    const burgerBtn = exercise.querySelector(".burger-btn");
+    const menu = exercise.querySelector(".menu");
+
+    burgerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
     });
 
-    // Handle form submit
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorMsg.textContent = '';
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      try {
-        if (isLogin) {
-          // Login
-          await auth.signInWithEmailAndPassword(email, password);
-        } else {
-          // Sign up
-          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-
-          // Optional: Initialize user data in Firestore after signup
-          await db.collection('users').doc(userCredential.user.uid).set({
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            email: email
-          });
-        }
-
-        // Redirect to app.html on success
-        window.location.href = 'app.html';
-      } catch (error) {
-        errorMsg.textContent = error.message;
-      }
+    // Edit button
+    exercise.querySelector(".edit-btn").addEventListener("click", () => {
+      loadExerciseToForm(exercise);
+      menu.style.display = "none";
     });
-  </script>
+
+    // Delete button
+    exercise.querySelector(".delete-btn").addEventListener("click", () => {
+      // Delete from Firestore
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("exercises")
+        .doc(exercise.dataset.id)
+        .delete()
+        .catch(console.error);
+    });
+
+    return exercise;
+  }
+
+  // Load exercise data from element to form for editing
+  function loadExerciseToForm(exercise) {
+    form.name.value = exercise.dataset.name;
+    form.startWeight.value = exercise.dataset.startWeight;
+    form.goalWeight.value = exercise.dataset.goalWeight;
+    form.currentWeight.value = exercise.dataset.currentWeight;
+
+    const repsArr = exercise.dataset.reps.split(",");
+    form.reps1.value = repsArr[0];
+    form.reps2.value = repsArr[1];
+    form.reps3.value = repsArr[2];
+
+    form.repRangeMin.value = exercise.dataset.repRangeMin;
+    form.repRangeMax.value = exercise.dataset.repRangeMax;
+    form.increment.value = exercise.dataset.increment;
+
+    editingExercise = exercise;
+    submitBtn.textContent = "Update Exercise";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Close all open menus when clicking outside
+  document.addEventListener("click", () => {
+    closeAllMenus();
+  });
+
+  function closeAllMenus() {
+    document.querySelectorAll(".menu").forEach((menu) => {
+      menu.style.display = "none";
+    });
+  }
+</script>
+
 </body>
 </html>

@@ -237,6 +237,24 @@
   let currentUser = null;
   let unsubscribeExercises = null; // to detach listener
 
+   firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .catch((error) => {
+    console.error("Auth persistence error:", error);
+  });
+   firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    console.log("User is signed in:", user.email);
+    // Show your main app UI, hide login form
+    showAppUI();
+    loadUserData(user.uid);
+  } else {
+    console.log("No user signed in");
+    // Show login form, hide main app UI
+    showLoginUI();
+  }
+});
+
+
   // Redirect to login if not logged in
   auth.onAuthStateChanged(user => {
     if (user) {

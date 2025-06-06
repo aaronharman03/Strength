@@ -315,15 +315,21 @@ firebase.auth().onAuthStateChanged(user => {
     return progressPercent;
   }
 
-  // Update overall progress bar
   function updateOverallProgress(progressArray) {
-    if (progressArray.length === 0) {
-      overallBarFill.style.width = "0%";
-      return;
-    }
-    const avgProgress = progressArray.reduce((a, b) => a + b, 0) / progressArray.length;
-    overallBarFill.style.width = avgProgress + "%";
+  const progressText = document.getElementById('overall-progress-text');
+
+  if (progressArray.length === 0) {
+    overallBarFill.style.width = "0%";
+    progressText.textContent = "0%";
+    return;
   }
+  
+  const avgProgress = progressArray.reduce((a, b) => a + b, 0) / progressArray.length;
+  const progressPercent = avgProgress.toFixed(1);
+
+  overallBarFill.style.width = progressPercent + "%";
+  progressText.textContent = progressPercent + "%";
+}
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();

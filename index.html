@@ -237,6 +237,15 @@
   let currentUser = null;
   let unsubscribeExercises = null; // to detach listener
 
+   firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    // User is already logged in, redirect to main app page
+    window.location.href = "main.html"; // change to your main app file
+  }
+  // else show login/signup form normally
+});
+
+
   // Redirect to login if not logged in
   auth.onAuthStateChanged(user => {
     if (user) {

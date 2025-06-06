@@ -1,1 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login / Signup - Strength Progress Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 400px;
+      margin: 60px auto;
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #4caf50;
+      margin-bottom: 20px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    input {
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline-offset: 2px;
+      outline-color: transparent;
+      transition: outline-color 0.3s;
+    }
+    input:focus {
+      outline-color: #4caf50;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background: #3a8e3a;
+    }
+    .switch-mode {
+      text-align: center;
+      margin-top: 15px;
+      cursor: pointer;
+      color: #4caf50;
+      user-select: none;
+    }
+    .error {
+      color: red;
+      font-weight: 600;
+      margin-top: -10px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="form-title">Login</h2>
+  <form id="auth-form">
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required minlength="6" />
+    <button type="submit" id="submit-btn">Login</button>
+  </form>
+  <div class="error" id="error-msg"></div>
+  <div class="switch-mode" id="switch-mode">Don't have an account? Sign up</div>
+
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <!-- Firebase Auth -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <!-- Firebase Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // TODO: Replace these with your Firebase config values from Firebase Console
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY_HERE",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const formTitle = document.getElementById('form-title');
+    const authForm = document.getElementById('auth-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submit-btn');
+    const switchMode = document.getElementById('switch-mode');
+    const errorMsg = document.getElementById('error-msg');
+
+    let isLogin = true; // track mode
+
+    // Toggle between login and signup
+    switchMode.addEventListener('click', () => {
+      isLogin = !isLogin;
+      formTitle.textContent = isLogin ? 'Login' : 'Sign Up';
+      submitBtn.textContent = isLogin ? 'Login' : 'Sign Up';
+      switchMode.textContent = isLogin ? "Don't have an account? Sign up" : "Already have an account? Login";
+      errorMsg.textContent = '';
+    });
+
+    // Handle form submit
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.textContent = '';
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      try {
+        if (isLogin) {
+          // Login
+          await auth.signInWithEmailAndPassword(email, password);
+        } else {
+          // Sign up
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+
+          // Optional: Initialize user data in Firestore after signup
+          await db.collection('users').doc(userCredential.user.uid).set({
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            email: email
+          });
+        }
+
+        // Redirect to app.html on success
+        window.location.href = 'app.html';
+      } catch (error) {
+        errorMsg.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>
 

@@ -399,19 +399,30 @@ logoutBtn.addEventListener("click", () => {
     exercise.dataset.repRangeMax = data.repRangeMax;
     exercise.dataset.increment = data.increment;
 
-    exercise.innerHTML = `
-      <strong>${data.name}</strong><br />
-      ${data.currentWeight.toFixed(1)} kg × [${data.reps.join(", ")} reps]<br />
-      Progress: ${progressPercent.toFixed(1)}%
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: ${progressPercent}%"></div>
-      </div>
-      <button class="burger-btn" aria-label="Options menu">&#x22EE;</button>
-      <div class="menu">
-        <button class="edit-btn">Edit</button>
-        <button class="delete-btn">Delete</button>
-      </div>
-    `;
+   exercise.innerHTML = `
+  <strong>${data.name}</strong><br />
+  ${data.currentWeight.toFixed(1)} kg × [${data.reps.join(", ")} reps]<br />
+  <div class="progress-bar" style="position: relative;">
+    <div class="progress-fill" style="width: ${progressPercent}%; background: #4caf50;"></div>
+    <span style="
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 20px;
+      line-height: 20px;
+      font-weight: 600;
+      color: #fff;
+      user-select: none;
+    ">${progressPercent.toFixed(1)}%</span>
+  </div>
+  <button class="burger-btn" aria-label="Options menu">&#x22EE;</button>
+  <div class="menu">
+    <button class="edit-btn">Edit</button>
+    <button class="delete-btn">Delete</button>
+  </div>
+`;
+
 
     // Setup burger menu toggle
     const burgerBtn = exercise.querySelector(".burger-btn");

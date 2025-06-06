@@ -254,15 +254,15 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
     console.error("Auth persistence error:", error);
   });
 
-// Listen for auth state changes
 firebase.auth().onAuthStateChanged(user => {
-  if (user) {
-    currentUser = user;
-    loadExercises();
+  if (!user) {
+    // No user signed in, redirect to login page
+    window.location.href = 'login.html';
   } else {
-    window.location.href = 'index.html';
+    // User is signed in, proceed to load app content
   }
 });
+
 
 logoutBtn.addEventListener("click", () => {
   auth.signOut().then(() => {

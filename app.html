@@ -256,16 +256,20 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 
 let redirecting = false;
 
+let redirecting = false;
+
 firebase.auth().onAuthStateChanged(user => {
+  if (redirecting) return;  // Prevent multiple redirects
+
   if (user) {
     currentUser = user;
     loadExercises();
   } else {
-    if (window.location.pathname !== '/index.html') {
-      window.location.href = 'index.html';
-    }
+    redirecting = true;
+    window.location.href = 'index.html';
   }
 });
+
 
 
 

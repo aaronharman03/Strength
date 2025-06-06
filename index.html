@@ -251,9 +251,10 @@
   });
 
  logoutBtn.addEventListener("click", () => {
+  console.log("Logout button clicked");
   auth.signOut()
     .then(() => {
-      // Redirect to login page explicitly after logout
+      console.log("Sign out successful");
       window.location.href = "index.html";
     })
     .catch((error) => {

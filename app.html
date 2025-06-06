@@ -6,6 +6,10 @@
   <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#4caf50" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <style>
     body {
@@ -205,243 +209,245 @@
   <h2>Progress</h2>
   <div id="exercises"></div>
 
-  <script>
-    <script>
-  // Initialize Firebase again in app.html with the same config:
+  <button id="logout-btn" style="position: fixed; top: 10px; right: 10px; background: #f44336; color: white; border:none; padding: 8px 12px; border-radius: 6px; cursor:pointer;">Logout</button>
+
+ <script>
+  // Your Firebase config - replace with your actual config from Firebase console
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
     projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    // ...rest of your config
   };
 
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const form = document.getElementById("exercise-form");
+  const exercisesDiv = document.getElementById("exercises");
+  const submitBtn = document.getElementById("submit-btn");
+  const overallBarFill = document.querySelector('#overall-progress-bar .progress-fill');
+  const logoutBtn = document.getElementById("logout-btn");
+
+  let editingExercise = null;
+  let currentUser = null;
+  let unsubscribeExercises = null; // to detach listener
 
   // Redirect to login if not logged in
   auth.onAuthStateChanged(user => {
-    if (!user) {
-      window.location.href = 'index.html';
+    if (user) {
+      currentUser = user;
+      loadExercises();
     } else {
-      // User is logged in, you can load user data here
-      console.log('Logged in user:', user.email);
-      // Optionally load Firestore user data here
+      window.location.href = "index.html";
     }
   });
+
+  logoutBtn.addEventListener("click", () => {
+    auth.signOut();
+  });
+
+  // Load exercises from Firestore
+  function loadExercises() {
+    if (unsubscribeExercises) unsubscribeExercises(); // detach previous listener
+
+    unsubscribeExercises = db.collection("users")
+      .doc(currentUser.uid)
+      .collection("exercises")
+      .onSnapshot(snapshot => {
+        exercisesDiv.innerHTML = "";
+        let progressArray = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data.id = doc.id;
+          const progressPercent = calculateProgress(data);
+          progressArray.push(progressPercent);
+
+          const exerciseElem = createExerciseElement(data, progressPercent);
+          exercisesDiv.appendChild(exerciseElem);
+        });
+
+        updateOverallProgress(progressArray);
+      });
+  }
+
+  // Calculate progress function same as before
+  function calculateProgress(data) {
+    const repRangeMin = data.repRangeMin;
+    const repRangeMax = data.repRangeMax;
+    const increment = data.increment;
+    const reps = data.reps;
+
+    const repIncrements = reps.map(r => r - repRangeMin);
+    const totalRepsIncrements = repIncrements.reduce((a, b) => a + b, 0);
+    const maxRepsIncrementsPerWeight = (repRangeMax - repRangeMin) * 3;
+    const weightIncrements = Math.floor((data.currentWeight - data.startWeight) / increment);
+    const maxWeightIncrements = Math.floor((data.goalWeight - data.startWeight) / increment);
+    const currentLevel = weightIncrements * (maxRepsIncrementsPerWeight + 1) + totalRepsIncrements + 1;
+    const maxLevel = maxWeightIncrements * (maxRepsIncrementsPerWeight + 1) + maxRepsIncrementsPerWeight + 1;
+
+    let progressPercent = (currentLevel / maxLevel) * 100;
+    progressPercent = Math.min(100, Math.max(0, progressPercent));
+
+    return progressPercent;
+  }
+
+  // Update overall progress bar
+  function updateOverallProgress(progressArray) {
+    if (progressArray.length === 0) {
+      overallBarFill.style.width = "0%";
+      return;
+    }
+    const avgProgress = progressArray.reduce((a, b) => a + b, 0) / progressArray.length;
+    overallBarFill.style.width = avgProgress + "%";
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    if (!currentUser) return;
+
+    const data = {
+      name: form.name.value.trim(),
+      startWeight: parseFloat(form.startWeight.value),
+      goalWeight: parseFloat(form.goalWeight.value),
+      currentWeight: parseFloat(form.currentWeight.value),
+      reps: [
+        parseInt(form.reps1.value),
+        parseInt(form.reps2.value),
+        parseInt(form.reps3.value),
+      ],
+      repRangeMin: parseInt(form.repRangeMin.value),
+      repRangeMax: parseInt(form.repRangeMax.value),
+      increment: parseFloat(form.increment.value),
+    };
+
+    // Clamp reps
+    data.reps = data.reps.map((r) =>
+      Math.min(Math.max(r, data.repRangeMin), data.repRangeMax)
+    );
+
+    if (editingExercise) {
+      // Update Firestore doc
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("exercises")
+        .doc(editingExercise.dataset.id)
+        .set(data)
+        .then(() => {
+          editingExercise = null;
+          submitBtn.textContent = "Add Exercise";
+          form.reset();
+        })
+        .catch(console.error);
+    } else {
+      // Add new doc to Firestore
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("exercises")
+        .add(data)
+        .then(() => {
+          form.reset();
+        })
+        .catch(console.error);
+    }
+  });
+
+  // Creates exercise DOM element with burger menu
+  function createExerciseElement(data, progressPercent) {
+    const exercise = document.createElement("div");
+    exercise.className = "exercise";
+
+    // Save data in dataset for easy editing later
+    exercise.dataset.id = data.id;
+    exercise.dataset.name = data.name;
+    exercise.dataset.startWeight = data.startWeight;
+    exercise.dataset.goalWeight = data.goalWeight;
+    exercise.dataset.currentWeight = data.currentWeight;
+    exercise.dataset.reps = data.reps.join(',');
+    exercise.dataset.repRangeMin = data.repRangeMin;
+    exercise.dataset.repRangeMax = data.repRangeMax;
+    exercise.dataset.increment = data.increment;
+
+    exercise.innerHTML = `
+      <strong>${data.name}</strong><br />
+      ${data.currentWeight.toFixed(1)} kg × [${data.reps.join(", ")} reps]<br />
+      Progress: ${progressPercent.toFixed(1)}%
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${progressPercent}%"></div>
+      </div>
+      <button class="burger-btn" aria-label="Options menu">&#x22EE;</button>
+      <div class="menu">
+        <button class="edit-btn">Edit</button>
+        <button class="delete-btn">Delete</button>
+      </div>
+    `;
+
+    // Setup burger menu toggle
+    const burgerBtn = exercise.querySelector(".burger-btn");
+    const menu = exercise.querySelector(".menu");
+
+    burgerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+
+    // Edit button
+    exercise.querySelector(".edit-btn").addEventListener("click", () => {
+      loadExerciseToForm(exercise);
+      menu.style.display = "none";
+    });
+
+    // Delete button
+    exercise.querySelector(".delete-btn").addEventListener("click", () => {
+      // Delete from Firestore
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("exercises")
+        .doc(exercise.dataset.id)
+        .delete()
+        .catch(console.error);
+    });
+
+    return exercise;
+  }
+
+  // Load exercise data from element to form for editing
+  function loadExerciseToForm(exercise) {
+    form.name.value = exercise.dataset.name;
+    form.startWeight.value = exercise.dataset.startWeight;
+    form.goalWeight.value = exercise.dataset.goalWeight;
+    form.currentWeight.value = exercise.dataset.currentWeight;
+
+    const repsArr = exercise.dataset.reps.split(",");
+    form.reps1.value = repsArr[0];
+    form.reps2.value = repsArr[1];
+    form.reps3.value = repsArr[2];
+
+    form.repRangeMin.value = exercise.dataset.repRangeMin;
+    form.repRangeMax.value = exercise.dataset.repRangeMax;
+    form.increment.value = exercise.dataset.increment;
+
+    editingExercise = exercise;
+    submitBtn.textContent = "Update Exercise";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Close all open menus when clicking outside
+  document.addEventListener("click", () => {
+    closeAllMenus();
+  });
+
+  function closeAllMenus() {
+    document.querySelectorAll(".menu").forEach((menu) => {
+      menu.style.display = "none";
+    });
+  }
 </script>
 
-    const form = document.getElementById("exercise-form");
-    const exercisesDiv = document.getElementById("exercises");
-    const submitBtn = document.getElementById("submit-btn");
-
-    // Store currently edited exercise element and its data index
-    let editingExercise = null;
-const overallBarFill = document.querySelector('#overall-progress-bar .progress-fill');
-let progressArray = []; // to store each exercise progress
-
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-
-      const data = {
-        name: form.name.value.trim(),
-        startWeight: parseFloat(form.startWeight.value),
-        goalWeight: parseFloat(form.goalWeight.value),
-        currentWeight: parseFloat(form.currentWeight.value),
-        reps: [
-          parseInt(form.reps1.value),
-          parseInt(form.reps2.value),
-          parseInt(form.reps3.value),
-        ],
-        repRangeMin: parseInt(form.repRangeMin.value),
-        repRangeMax: parseInt(form.repRangeMax.value),
-        increment: parseFloat(form.increment.value),
-      };
-
-      // Clamp reps
-      data.reps = data.reps.map((r) =>
-        Math.min(Math.max(r, data.repRangeMin), data.repRangeMax)
-      );
-
-      // Calculate progress
-      const repIncrements = data.reps.map((r) => r - data.repRangeMin);
-      const totalRepsIncrements = repIncrements.reduce((a, b) => a + b, 0);
-      const maxRepsIncrementsPerWeight =
-        (data.repRangeMax - data.repRangeMin) * 3;
-      const weightIncrements = Math.floor(
-        (data.currentWeight - data.startWeight) / data.increment
-      );
-      const maxWeightIncrements = Math.floor(
-        (data.goalWeight - data.startWeight) / data.increment
-      );
-      const currentLevel =
-        weightIncrements * (maxRepsIncrementsPerWeight + 1) +
-        totalRepsIncrements +
-        1;
-      const maxLevel =
-        maxWeightIncrements * (maxRepsIncrementsPerWeight + 1) +
-        maxRepsIncrementsPerWeight +
-        1;
-      let progressPercent = (currentLevel / maxLevel) * 100;
-      progressPercent = Math.min(100, Math.max(0, progressPercent));
-
-      const progressPercentNum = progressPercent;
-  progressArray.push(progressPercentNum);
-  const avgProgress = progressArray.reduce((a, b) => a + b, 0) / progressArray.length;
-  overallBarFill.style.width = avgProgress + '%';
-
-      if (editingExercise) {
-        // Update existing exercise element
-        editingExercise.dataset.name = data.name;
-        editingExercise.dataset.startWeight = data.startWeight;
-        editingExercise.dataset.goalWeight = data.goalWeight;
-        editingExercise.dataset.currentWeight = data.currentWeight;
-        editingExercise.dataset.reps = data.reps.join(',');
-        editingExercise.dataset.repRangeMin = data.repRangeMin;
-        editingExercise.dataset.repRangeMax = data.repRangeMax;
-        editingExercise.dataset.increment = data.increment;
-
-        updateExerciseElement(editingExercise, data, progressPercent);
-
-        editingExercise = null;
-        submitBtn.textContent = "Add Exercise";
-      } else {
-        // Create new exercise element
-        const exercise = createExerciseElement(data, progressPercent);
-        exercisesDiv.appendChild(exercise);
-      }
-
-      form.reset();
-    });
-    if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
-      .then(registration => {
-        console.log('Service Worker registered with scope:', registration.scope);
-      })
-      .catch(error => {
-        console.error('Service Worker registration failed:', error);
-      });
-  });
-}
-
-
-    // Creates exercise DOM element with burger menu
-    function createExerciseElement(data, progressPercent) {
-      const exercise = document.createElement("div");
-      exercise.className = "exercise";
-
-      // Save data in dataset for easy editing later
-      exercise.dataset.name = data.name;
-      exercise.dataset.startWeight = data.startWeight;
-      exercise.dataset.goalWeight = data.goalWeight;
-      exercise.dataset.currentWeight = data.currentWeight;
-      exercise.dataset.reps = data.reps.join(',');
-      exercise.dataset.repRangeMin = data.repRangeMin;
-      exercise.dataset.repRangeMax = data.repRangeMax;
-      exercise.dataset.increment = data.increment;
-
-      exercise.innerHTML = `
-        <strong>${data.name}</strong><br />
-        ${data.currentWeight.toFixed(1)} kg × [${data.reps.join(", ")} reps]<br />
-        Progress: ${progressPercent.toFixed(1)}%
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: ${progressPercent}%"></div>
-        </div>
-        <button class="burger-btn" aria-label="Options menu">&#x22EE;</button>
-        <div class="menu">
-          <button class="edit-btn">Edit</button>
-          <button class="delete-btn">Delete</button>
-        </div>
-      `;
-
-      // Setup burger menu toggle
-      const burgerBtn = exercise.querySelector(".burger-btn");
-      const menu = exercise.querySelector(".menu");
-
-      burgerBtn.addEventListener("click", (e) => {
-        e.stopPropagation(); // prevent document click closing immediately
-        closeAllMenus();
-        menu.style.display = menu.style.display === "block" ? "none" : "block";
-      });
-
-      // Edit button
-      exercise.querySelector(".edit-btn").addEventListener("click", () => {
-        loadExerciseToForm(exercise);
-        menu.style.display = "none";
-      });
-
-      // Delete button
-      exercise.querySelector(".delete-btn").addEventListener("click", () => {
-        exercise.remove();
-      });
-
-      return exercise;
-    }
-
-    // Update the inner content of an existing exercise element
-   function updateExerciseElement(element, data, progressPercent) {
-  element.innerHTML = `
-    <strong>${data.name}</strong><br>
-    ${data.currentWeight} kg × [${data.reps.join(', ')} reps]<br>
-    Progress: ${progressPercent.toFixed(1)}%
-    <div class="progress-bar">
-      <div class="progress-fill" style="width: ${progressPercent}%"></div>
-    </div>
-    <div class="burger-menu">
-      <button class="edit-btn">✏️</button>
-      <button class="delete-btn">🗑️</button>
-    </div>
-  `;
-
-  // Re-attach the edit and delete button handlers
-  element.querySelector('.edit-btn').addEventListener('click', () => {
-    populateFormFromElement(element);
-    editingExercise = element;
-    document.querySelector('button[type="submit"]').textContent = 'Update Exercise';
-  });
-
-  element.querySelector('.delete-btn').addEventListener('click', () => {
-    element.remove();
-    updateOverallProgress();
-  });
-
-  updateOverallProgress(); // Also refresh the average bar
-}
-
-    // Load exercise data from element to form for editing
-    function loadExerciseToForm(exercise) {
-      form.name.value = exercise.dataset.name;
-      form.startWeight.value = exercise.dataset.startWeight;
-      form.goalWeight.value = exercise.dataset.goalWeight;
-      form.currentWeight.value = exercise.dataset.currentWeight;
-
-      const repsArr = exercise.dataset.reps.split(",");
-      form.reps1.value = repsArr[0];
-      form.reps2.value = repsArr[1];
-      form.reps3.value = repsArr[2];
-
-      form.repRangeMin.value = exercise.dataset.repRangeMin;
-      form.repRangeMax.value = exercise.dataset.repRangeMax;
-      form.increment.value = exercise.dataset.increment;
-
-      editingExercise = exercise;
-      submitBtn.textContent = "Update Exercise";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    // Close all open menus when clicking outside
-    document.addEventListener("click", () => {
-      closeAllMenus();
-    });
-
-    function closeAllMenus() {
-      document.querySelectorAll(".menu").forEach((menu) => {
-        menu.style.display = "none";
-      });
-    }
-  </script>
 </body>
 </html>
 
